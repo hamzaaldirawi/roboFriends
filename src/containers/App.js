@@ -1,46 +1,38 @@
-import { Fragment, Component } from 'react/cjs/react.production.min';
+import { useEffect, Fragment } from 'react';
+import { connect } from 'react-redux';
 import SearchBox from '../components/SearchBox';
 import CardList from '../components/CardList';
 import Scroll from '../components/Scroll';
 import ErrorBoundry from '../components/ErrorBoundry';
+
+import { requestRobots, setSearchField } from '../redux/actions';
+
 import './App.css';
 
 // Props is simply thing that come out from state, and never change
 // State is an object that describe your app, and able to change
 // Children, a children from props to render the prop of the children component 
 
-class App extends Component {
-  constructor() {
-    super()
-    this.state = {
-      robots: [],
-      searchField: ''
-    }
-  }
+const App = ({searchField, onSearchChange, robots, isPending, onRequestRobots}) => {
 
-  componentDidMount() {
-    const url = 'https://jsonplaceholder.typicode.com/users';
-    fetch(url)
-      .then(res => res.json())
-      .then(users => this.setState({ robots: users }));
-  }
 
-  onSearchChange = (e) => {
-    e.preventDefault();
-    this.setState({ searchField: e.target.value });
+  useEffect(() => {
+    onRequestRobots()
+  }, [])
+
+
+
+  const filteredRobots = robots.filter(robot => {
+    return robot.name.toLowerCase().includes(searchField.toLowerCase())
+  })
+  
+  if(isPending) {
+    return <h1>Loading</h1>
   }
-  render() {
-    const { robots, searchField } = this.state;
-    const filteredRobots = robots.filter(robots => {
-      return robots.name.toLowerCase().includes(searchField.toLowerCase())
-    })
-    if(!robots.length) {
-      return <h1>Loading</h1>
-    }
     return (
       <Fragment>
         <h1>Robot Friend</h1>
-        <SearchBox searchChange = { this.onSearchChange }/>
+        <SearchBox searchChange = { onSearchChange }/>
         <Scroll>
           <ErrorBoundry>
             <CardList robots = { filteredRobots }/>  
@@ -48,7 +40,22 @@ class App extends Component {
         </Scroll>
       </Fragment>
     )
+}
+
+const mapStateToProps = state => {
+  return {
+    searchField: state.searchRobots.searchField,
+    robots: state.requestRobots.robots,
+    isPending: state.requestRobots.isPending,
+    err: state.requestRobots.err
   }
 }
 
-export default App;
+const mapDispatchToProps = (dispatch) => {
+  return {
+    onSearchChange: (event) => dispatch(setSearchField(event.target.value)),
+    onRequestRobots: () => dispatch(requestRobots())
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
